@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anchor — a week built around what matters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26313F;
+    --ink-soft:#5B6A78;
+    --paper:#F1EAD9;
+    --paper-raised:#FAF6EC;
+    --line:rgba(38,49,63,0.16);
+    --rust:#A6522C;   /* health / training */
+    --sage:#6B7F5B;   /* family */
+    --slate:#4C5C72;  /* study */
+    --gold:#B98B2A;   /* faith */
+    --work-tone:#26313F;
+    --sleep-tone:#CFC6AE;
+    --free-tone:#E4DCC7;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:70px;
+  }
+  h1,h2,h3,.serif{font-family:'Source Serif 4',serif;}
+  a{color:inherit;}
+  .shell{max-width:640px;margin:0 auto;padding:0 22px;}
+
+  .topbar{padding:34px 0 18px;}
+  .topbar .mark{font-size:14px;color:var(--ink-soft);}
+  .topbar h1{font-size:26px;margin:6px 0 0;font-weight:600;letter-spacing:-0.01em;}
+  .topbar .date{font-size:14px;color:var(--ink-soft);margin-top:2px;}
+
+  .tabs{display:flex;gap:4px;margin:14px 0 0;border-bottom:1px solid var(--line);}
+  .tab{
+    font-size:13.5px;padding:9px 4px;cursor:pointer;color:var(--ink-soft);
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:500;}
+
+  section{padding:26px 0;border-top:1px solid var(--line);}
+  section:first-of-type{border-top:none;}
+  .section-label{font-size:13px;color:var(--ink-soft);margin:0 0 12px;}
+
+  /* ---- Hero ---- */
+  .hero{background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius);padding:22px 22px 18px;}
+  .hero .status{font-size:14px;color:var(--ink-soft);margin-bottom:4px;}
+  .hero h2{font-size:21px;margin:0 0 14px;font-weight:600;line-height:1.35;}
+  .fit-row{display:flex;align-items:baseline;gap:10px;padding:9px 0;border-top:1px solid var(--line);}
+  .fit-row:first-of-type{border-top:none;}
+  .fit-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+  .fit-time{font-size:13px;color:var(--ink-soft);width:44px;flex-shrink:0;}
+  .fit-text{font-size:15px;line-height:1.4;}
+  .hero-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .btn{background:var(--ink);color:var(--paper-raised);border:none;border-radius:var(--radius);padding:9px 15px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;cursor:pointer;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn.small{padding:6px 11px;font-size:12.5px;}
+  .min-day-note{font-size:12.5px;color:var(--ink-soft);margin-top:10px;}
+
+  /* ---- Sleep target ---- */
+  .sleep-card{display:flex;align-items:baseline;gap:22px;flex-wrap:wrap;}
+  .sleep-card .num{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;}
+  .sleep-card .lbl{font-size:11.5px;color:var(--ink-soft);text-transform:none;}
+  .sleep-note{font-size:13px;color:var(--ink-soft);margin-top:10px;line-height:1.5;}
+
+  /* ---- Day shape bar ---- */
+  .shape-bar{display:flex;height:22px;border-radius:4px;overflow:hidden;border:1px solid var(--line);}
+  .shape-key{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px;color:var(--ink-soft);}
+  .shape-key span{display:inline-flex;align-items:center;gap:6px;}
+  .key-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+  /* ---- Week timeline ---- */
+  .day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .day-chip{font-size:12.5px;padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:var(--paper-raised);cursor:pointer;color:var(--ink-soft);}
+  .day-chip.active{background:var(--ink);color:var(--paper-raised);border-color:var(--ink);}
+  .tl-row{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line);}
+  .tl-row:first-of-type{border-top:none;}
+  .tl-time{font-size:12.5px;color:var(--ink-soft);width:96px;flex-shrink:0;}
+  .tl-bar{width:5px;border-radius:3px;flex-shrink:0;}
+  .tl-label{font-size:14px;}
+  .tl-sub{font-size:12.5px;color:var(--ink-soft);}
+
+  /* ---- Week strip (check-in dots) ---- */
+  .week-strip{display:flex;justify-content:space-between;}
+  .week-day{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);}
+  .week-day.today{color:var(--ink);font-weight:600;}
+  .dot-col{display:flex;flex-direction:column;gap:4px;}
+  .rdot{width:8px;height:8px;border-radius:50%;border:1.4px solid var(--line);}
+
+  /* ---- Evening check-in ---- */
+  .check-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line);}
+  .check-row:first-of-type{border-top:none;}
+  .check-label{display:flex;align-items:center;gap:9px;font-size:14.5px;}
+  .check-btns{display:flex;gap:6px;}
+  .check-btn{font-size:12px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--paper-raised);cursor:pointer;color:var(--ink-soft);}
+  .check-btn.active{background:var(--ink);color:var(--paper-raised);border-color:var(--ink);}
+
+  /* ---- Food ---- */
+  .food-group{padding:12px 0;border-top:1px solid var(--line);}
+  .food-group:first-of-type{border-top:none;}
+  .food-group h3{font-size:15px;margin:0 0 4px;font-weight:600;}
+  .food-group p{font-size:13.5px;color:var(--ink-soft);margin:0;line-height:1.5;}
+
+  /* ---- Onboarding / settings ---- */
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+  .field label{font-size:12.5px;color:var(--ink-soft);}
+  .field input{border:1px solid var(--line);border-radius:var(--radius);padding:9px 10px;font-size:14px;font-family:'IBM Plex Sans',sans-serif;background:var(--paper-raised);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .priority-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:8px;background:var(--paper-raised);}
+  .priority-row .plabel{display:flex;align-items:center;gap:9px;font-size:14.5px;}
+  .pbtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--paper-raised);cursor:pointer;font-size:13px;color:var(--ink-soft);}
+  .pbtn:disabled{opacity:.3;cursor:not-allowed;}
+  .day-edit{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;background:var(--paper-raised);}
+  .day-edit .dname{font-size:14px;font-weight:600;margin-bottom:8px;}
+  .day-edit .brow{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;}
+  .day-edit .brow input{width:90px;padding:6px 8px;font-size:13px;border:1px solid var(--line);border-radius:5px;}
+  .day-edit .brow span{color:var(--ink-soft);font-size:12.5px;flex:1;}
+
+  .edit-link{font-size:12.5px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;}
+  footer{text-align:center;font-size:12px;color:var(--ink-soft);padding:20px 0 0;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <div class="topbar">
+    <div class="mark">Anchor</div>
+    <h1 id="greeting">Good day</h1>
+    <div class="date" id="dateLine">—</div>
+  </div>
+
+  <!-- ONBOARDING / SETTINGS -->
+  <section id="onboarding" class="hidden">
+    <div class="section-label">Setup — edit any time</div>
+    <div class="hero">
+      <h2 style="margin-bottom:4px;">Wake, sleep, and faith</h2>
+      <div class="grid2">
+        <div class="field"><label>Wake time</label><input type="time" id="ob_wake" value="05:30"></div>
+        <div class="field"><label>Sleep target (hours)</label><input type="number" id="ob_sleep" value="7.5" step="0.5"></div>
+        <div class="field"><label>Work starts</label><input type="time" id="ob_workStart" value="08:30"></div>
+        <div class="field"><label>Work ends</label><input type="time" id="ob_workEnd" value="17:00"></div>
+        <div class="field"><label>Morning faith & prayer (minutes)</label><input type="number" id="ob_faith" value="30" step="5"></div>
+      </div>
+
+      <h2 style="margin:18px 0 4px;font-size:17px;">Study / family / faith — priority order</h2>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin-top:0;">For whatever's left after work, family blocks and training. Top gets first claim.</p>
+      <div id="ob_priorities"></div>
+
+      <h2 style="margin:18px 0 4px;font-size:17px;">This week's fixed blocks</h2>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin-top:0;">Pre-filled with a sample week. Change anything that does not match yours.</p>
+      <div id="ob_weekBlocks"></div>
+
+      <div class="hero-actions">
+        <button class="btn" id="ob_save">Save</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN APP -->
+  <div id="mainApp" class="hidden">
+
+    <div class="tabs">
+      <div class="tab active" data-tab="today">Today</div>
+      <div class="tab" data-tab="week">Week</div>
+      <div class="tab" data-tab="food">Food</div>
+    </div>
+
+    <!-- TODAY TAB -->
+    <div id="tab-today">
+      <section>
+        <div class="section-label">Right now</div>
+        <div class="hero" id="heroCard"></div>
+      </section>
+
+      <section>
+        <div class="section-label">Sleep target</div>
+        <div class="hero sleep-card" id="sleepCard"></div>
+      </section>
+
+      <section>
+        <div class="section-label">Today's shape</div>
+        <div class="shape-bar" id="shapeBar"></div>
+        <div class="shape-key" id="shapeKey"></div>
+      </section>
+
+      <section>
+        <div class="section-label">This week's check-ins</div>
+        <div class="week-strip" id="weekStrip"></div>
+      </section>
+
+      <section>
+        <div class="section-label">Evening check-in</div>
+        <div id="checkIn"></div>
+      </section>
+
+      <section style="padding-top:16px;border-top:none;">
+        <span class="edit-link" id="editSetup">Edit setup</span>
+      </section>
+    </div>
+
+    <!-- WEEK TAB -->
+    <div id="tab-week" class="hidden">
+      <section>
+        <div class="section-label">This week's timetable</div>
+        <div class="day-tabs" id="dayTabs"></div>
+        <div id="dayTimeline"></div>
+      </section>
+    </div>
+
+    <!-- FOOD TAB -->
+    <div id="tab-food" class="hidden">
+      <section>
+        <div class="section-label">Building meals around training and family</div>
+        <div id="foodList"></div>
+      </section>
+    </div>
+
+  </div>
+
+  <footer>Balance, not optimisation. Missing a day doesn't need making up for.</footer>
+</div>
+
+<script>
+/* ---------------- Weekly template (index 0 = Sunday, matches Date.getDay()) ---------------- */
+const WEEKLY = [
+  {name:"Sunday", work:false, blocks:[{label:"Family lunch",type:"family",start:"12:30",end:"14:30"}],
+    workout:{label:"Rest", detail:"Family afternoon — a walk if there's time, nothing planned.", dur:0}},
+  {name:"Monday", work:true, blocks:[{label:"Family dinner",type:"family",start:"18:00",end:"19:00"}],
+    workout:{label:"Push", detail:"Chest, shoulders, triceps", dur:50}},
+  {name:"Tuesday", work:true, blocks:[{label:"Evening class",type:"chores",start:"18:30",end:"20:00"}],
+    workout:{label:"Rest / mobility", detail:"Evening class runs late, so a short stretch or walk is enough", dur:15}},
+  {name:"Wednesday", work:true, blocks:[{label:"Family dinner",type:"family",start:"18:00",end:"19:00"}],
+    workout:{label:"Pull", detail:"Back, biceps", dur:50}},
+  {name:"Thursday", work:true, blocks:[{label:"Volunteering",type:"chores",start:"18:00",end:"19:30"}],
+    workout:{label:"Legs", detail:"Squats, hinge work, accessories", dur:50}},
+  {name:"Friday", work:true, blocks:[{label:"Family dinner",type:"family",start:"18:00",end:"19:00"}],
+    workout:{label:"Upper body + core", detail:"Arms, shoulders, core", dur:40}},
+  {name:"Saturday", work:false, blocks:[
+      {label:"Weekly shop",type:"chores",start:"10:00",end:"11:30"},
+      {label:"Visit relatives",type:"family",start:"15:00",end:"17:00"}
+    ], workout:{label:"Full body", detail:"Compound lifts — morning before chores or afternoon", dur:60}}
+];
+
+const DOMAINS = {
+  family:{label:"Family",hex:"#6B7F5B",library:[{d:15,t:"Sit with the kids, no phone"},{d:30,t:"One-to-one time with a child"},{d:10,t:"Call home and check in"}],minLibrary:[{d:5,t:"Two minutes of full attention, no phone"}]},
+  study:{label:"Study",hex:"#4C5C72",library:[{d:25,t:"Read one paper or chapter"},{d:45,t:"A focused writing block"},{d:15,t:"Review yesterday's notes"}],minLibrary:[{d:10,t:"Read one page"}]},
+  faith:{label:"Faith",hex:"#B98B2A",library:[{d:10,t:"Extra quiet reflection"},{d:20,t:"Read a passage and sit with it"}],minLibrary:[{d:5,t:"A few minutes of quiet"}]},
+  health:{label:"Training",hex:"#A6522C"}
+};
+const CHECK_DOMAINS = ["family","study","faith","health"];
+const DAY_LETTERS = ["S","M","T","W","T","F","S"];
+
+const FOOD = [
+  {title:"Protein — build and repair", body:"Eggs, chicken, turkey, fish, Greek yoghurt, cottage cheese, tofu, lentils, beans. Aim for a portion at most meals — roughly a palm-sized amount is a reasonable everyday guide."},
+  {title:"Complex carbs — fuel for training and study", body:"Oats, brown rice, wholemeal bread, sweet potato, quinoa. These sit well before an early workout or a study block."},
+  {title:"Vegetables and fruit", body:"Leafy greens, peppers, tomatoes, berries, bananas. Colour and variety matter more than any single 'superfood.'"},
+  {title:"Healthy fats", body:"Olive oil, nuts, seeds, avocado, oily fish like salmon or mackerel — good for hormone health and satiety."},
+  {title:"Hydration", body:"Water through the day, and a bit more around training. Coffee before the AM session is fine — just watch the total if sleep is already tight."},
+  {title:"Around training", body:"A meal with protein and carbs within an hour or two after lifting helps recovery. No food is 'negative calorie' and none is required to hit a target — total pattern over the week matters far more than any single meal."}
+];
+
+/* ---------------- Storage ---------------- */
+async function loadKey(key, fallback){
+  try{ const r = await window.storage.get(key); return r ? JSON.parse(r.value) : fallback; }
+  catch(e){ return fallback; }
+}
+async function saveKey(key, value){
+  try{ await window.storage.set(key, JSON.stringify(value)); } catch(e){ console.error("save failed", e); }
+}
+
+/* ---------------- State ---------------- */
+let state = {
+  onboarded:false,
+  profile:{wake:"05:30", sleepHours:7.5, workStart:"08:30", workEnd:"17:00", faithMinutes:30, priorities:["study","family","faith"]},
+  weekBlocks:{},     // { "1": [{start,end}], ... } times only, label/type/dur from WEEKLY
+  reflections:{},
+  minimumDays:{}
+};
+let obPriorities = [];
+let activeTab = 'today';
+let activeDayIdx = new Date().getDay();
+
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function toMin(hhmm){ const [h,m] = hhmm.split(':').map(Number); return h*60+m; }
+function fmt(mins){
+  mins = ((mins%1440)+1440)%1440;
+  let h = Math.floor(mins/60), m = mins%60;
+  const ap = h>=12 ? "PM":"AM";
+  let h12 = h%12; if(h12===0) h12=12;
+  return `${h12}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function defaultWeekBlocks(){
+  const wb = {};
+  WEEKLY.forEach((d,i)=>{ wb[i] = d.blocks.map(b=>({start:b.start,end:b.end})); });
+  return wb;
+}
+
+/* ---------------- Timeline engine ---------------- */
+// Builds a full-day timeline (relative to wake=0) by painting a 1440-minute array.
+// Later paints override earlier ones, so family/faith blocks correctly carve into
+// a work block instead of just sitting on top of it. Invalid/blank times are skipped
+// rather than allowed to poison the rest of the day with NaN.
+function getDayTimeline(dow){
+  const p = state.profile;
+  const wakeMin = toMin(p.wake);
+  const rel = (clock) => {
+    const t = toMin(clock);
+    if(isNaN(t)) return null;
+    return ((t-wakeMin)+1440)%1440;
+  };
+  const tmpl = WEEKLY[dow];
+  const custom = state.weekBlocks[dow] || tmpl.blocks.map(b=>({start:b.start,end:b.end}));
+
+  const minutes = new Array(1440).fill(null);
+  function paint(start,end,type,label){
+    if(start==null || end==null || isNaN(start) || isNaN(end)) return; // skip invalid blocks instead of corrupting the day
+    const len = ((end-start)%1440+1440)%1440;
+    if(len===0) return;
+    for(let k=0;k<len;k++){ minutes[(start+k)%1440] = {type,label}; }
+  }
+
+  // Paint order = priority order: sleep and work are the backdrop; faith and
+  // family/chores/fixed blocks are painted last so they always take precedence.
+  paint(1440 - Math.round(p.sleepHours*60), 1440, 'sleep', 'Sleep');
+  if(tmpl.work) paint(rel(p.workStart), rel(p.workEnd), 'work', 'Work');
+  paint(0, p.faithMinutes, 'faith', 'Morning faith & prayer');
+  tmpl.blocks.forEach((b,i)=>{
+    const times = custom[i] || b;
+    paint(rel(times.start), rel(times.end), b.type, b.label);
+  });
+
+  // Collapse the painted minutes into contiguous segments.
+  const timeline = [];
+  let curType = null, curLabel = null, segStart = 0;
+  for(let i=0;i<1440;i++){
+    const cell = minutes[i];
+    const type = cell ? cell.type : 'free';
+    const label = cell ? cell.label : 'Free';
+    if(type!==curType || label!==curLabel){
+      if(curType!==null) timeline.push({start:segStart, end:i, type:curType, label:curLabel});
+      curType = type; curLabel = label; segStart = i;
+    }
+  }
+  timeline.push({start:segStart, end:1440, type:curType, label:curLabel});
+  return timeline;
+}
+function currentDowAndRel(){
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+  const wakeMin = toMin(state.profile.wake);
+  let dow = now.getDay();
+  if(nowMin < wakeMin) dow = (dow+6)%7; // still within yesterday's logical day (before waking)
+  const rel = ((nowMin - wakeMin)+1440)%1440;
+  return {dow, rel};
+}
+
+/* ---------------- Suggestions ---------------- */
+function generateSuggestions(remaining, minDay, dow){
+  const list = [];
+  let budget = remaining;
+  const order = [...state.profile.priorities];
+  // slot training in wherever it ranks among priorities isn't tracked separately —
+  // offer it first if there's a session today and enough time, then the ranked list.
+  const workout = WEEKLY[dow].workout;
+  if(workout.dur>0){
+    const dur = minDay ? Math.min(15, workout.dur) : workout.dur;
+    const text = minDay && workout.dur>15 ? `${workout.label} — shortened to the essentials` : `${workout.label} — ${workout.detail}`;
+    if(dur<=budget){ list.push({domain:'health', d:dur, t:text}); budget -= dur; }
+  }
+  for(const key of order){
+    if(budget<=5) break;
+    const lib = minDay ? DOMAINS[key].minLibrary : DOMAINS[key].library;
+    const fits = lib.filter(x=>x.d<=budget).sort((a,b)=>b.d-a.d);
+    if(fits.length){ list.push({domain:key, ...fits[0]}); budget -= fits[0].d; }
+  }
+  return list;
+}
+
+/* ---------------- Hero ---------------- */
+function renderHero(){
+  const {dow, rel} = currentDowAndRel();
+  const timeline = getDayTimeline(dow);
+  const seg = timeline.find(s=>rel>=s.start && rel<s.end) || timeline[timeline.length-1];
+  const el = document.getElementById('heroCard');
+  const tKey = todayKey();
+  const minDay = !!state.minimumDays[tKey];
+  const wakeMin = toMin(state.profile.wake);
+  const toClock = (relMin) => (wakeMin+relMin)%1440;
+
+  if(seg.type === 'work'){
+    el.innerHTML = `<div class="status">Until ${fmt(toClock(seg.end))}</div><h2>At work. If a gap opens between meetings, that's a study window — nothing's scheduled to compete with it.</h2>`;
+    return;
+  }
+  if(seg.type === 'family' || seg.type === 'chores'){
+    el.innerHTML = `<div class="status">Until ${fmt(toClock(seg.end))}</div><h2>${seg.label}. Fully present here — the rest of the day can wait.</h2>`;
+    return;
+  }
+  if(seg.type === 'faith'){
+    el.innerHTML = `<div class="status">Until ${fmt(toClock(seg.end))}</div><h2>${seg.label}.</h2>`;
+    return;
+  }
+  if(seg.type === 'sleep'){
+    el.innerHTML = `<div class="status">Until ${fmt(toClock(seg.end))}</div><h2>Wind-down window. This is what makes tomorrow's 5:30 possible.</h2>`;
+    return;
+  }
+
+  const remaining = seg.end - rel;
+  const suggestions = generateSuggestions(remaining, minDay, dow);
+  let rows;
+  if(suggestions.length === 0){
+    rows = `<div class="fit-row"><span class="fit-text" style="color:var(--ink-soft);">Not quite enough time for a planned block — that's fine.</span></div>`;
+  } else {
+    rows = suggestions.map(s=>`<div class="fit-row"><span class="fit-dot" style="background:${DOMAINS[s.domain].hex}"></span><span class="fit-time">${s.d}m</span><span class="fit-text">${s.t}</span></div>`).join("");
+  }
+  el.innerHTML = `
+    <div class="status">${remaining} minutes until ${fmt(toClock(seg.end))}</div>
+    <h2>Here's what fits.</h2>
+    ${rows}
+    <div class="hero-actions">
+      <button class="btn small ghost" id="reshuffleBtn">Show a different mix</button>
+      <button class="btn small ${minDay?'':'ghost'}" id="minDayBtn">${minDay ? "Minimum day is on" : "Just give me the minimum today"}</button>
+    </div>
+    ${minDay ? `<div class="min-day-note">Trimmed to the essentials. Nothing here needs making up for tomorrow.</div>` : ""}
+  `;
+  document.getElementById('reshuffleBtn')?.addEventListener('click', async ()=>{
+    state.profile.priorities.push(state.profile.priorities.shift());
+    renderHero();
+    await saveKey('profile', state.profile);
+  });
+  document.getElementById('minDayBtn')?.addEventListener('click', async ()=>{
+    state.minimumDays[tKey] = !state.minimumDays[tKey];
+    await saveKey('minimumDays', state.minimumDays);
+    renderHero();
+  });
+}
+
+/* ---------------- Sleep card ---------------- */
+function renderSleepCard(){
+  const p = state.profile;
+  const bedtime = fmt(toMin(p.wake) - Math.round(p.sleepHours*60));
+  document.getElementById('sleepCard').innerHTML = `
+    <div><div class="num">${p.wake.replace(/^0/,'')}</div><div class="lbl">Wake</div></div>
+    <div><div class="num">${bedtime}</div><div class="lbl">Bedtime target</div></div>
+    <div><div class="num">${p.sleepHours}h</div><div class="lbl">Sleep</div></div>
+    <div class="sleep-note">Regularity is what matters here — the same wake and bed time most days does more than any single perfect night.</div>
+  `;
+}
+
+/* ---------------- Day shape (today) ---------------- */
+function renderShape(){
+  const {dow} = currentDowAndRel();
+  const timeline = getDayTimeline(dow);
+  const colorFor = t => ({work:"#26313F", family:"#6B7F5B", chores:"#6B7F5B", faith:"#B98B2A", sleep:"#CFC6AE", free:"#E4DCC7"}[t] || "#E4DCC7");
+  const labelFor = t => ({work:"Work", family:"Family", chores:"Chores", faith:"Faith", sleep:"Sleep", free:"Free / training / study"}[t] || t);
+
+  const bar = document.getElementById('shapeBar');
+  bar.innerHTML = timeline.map(s=>`<div style="width:${((s.end-s.start)/1440*100).toFixed(2)}%;background:${colorFor(s.type)};"></div>`).join("");
+
+  const totals = {};
+  timeline.forEach(s=>{ totals[s.type] = (totals[s.type]||0) + (s.end-s.start); });
+  const key = document.getElementById('shapeKey');
+  key.innerHTML = Object.keys(totals).map(t=>{
+    const mins = totals[t]; const h = Math.floor(mins/60), m = mins%60;
+    return `<span><i class="key-dot" style="background:${colorFor(t)}"></i>${labelFor(t)} — ${h}h${m?` ${m}m`:''}</span>`;
+  }).join("");
+}
+
+/* ---------------- Week strip (check-ins) ---------------- */
+function renderWeekStrip(){
+  const el = document.getElementById('weekStrip');
+  const today = new Date();
+  let html = "";
+  for(let i=6;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    const isToday = i===0;
+    const refl = state.reflections[key] || {};
+    const dots = CHECK_DOMAINS.map(k=>{
+      const v = refl[k];
+      const hex = DOMAINS[k].hex;
+      let style;
+      if(v==='yes') style = `background:${hex};border-color:${hex};`;
+      else if(v==='partial') style = `background:transparent;border-color:${hex};border-width:2px;`;
+      else style = `background:transparent;border-color:var(--line);`;
+      return `<span class="rdot" style="${style}"></span>`;
+    }).join("");
+    html += `<div class="week-day ${isToday?'today':''}"><div class="dot-col">${dots}</div><div>${DAY_LETTERS[d.getDay()]}</div></div>`;
+  }
+  el.innerHTML = html;
+}
+
+/* ---------------- Evening check-in ---------------- */
+function renderCheckIn(){
+  const tKey = todayKey();
+  const refl = state.reflections[tKey] || {};
+  const el = document.getElementById('checkIn');
+  el.innerHTML = CHECK_DOMAINS.map(key=>{
+    const d = DOMAINS[key];
+    const cur = refl[key];
+    const opts = [["yes","Yes"],["partial","A little"],["no","Not today"]];
+    return `<div class="check-row">
+      <span class="check-label"><i class="key-dot" style="background:${d.hex};"></i>${d.label}</span>
+      <span class="check-btns">${opts.map(([v,l])=>`<button class="check-btn ${cur===v?'active':''}" data-domain="${key}" data-val="${v}">${l}</button>`).join("")}</span>
+    </div>`;
+  }).join("");
+  el.querySelectorAll('.check-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const domain = btn.dataset.domain, val = btn.dataset.val;
+      if(!state.reflections[tKey]) state.reflections[tKey] = {};
+      state.reflections[tKey][domain] = state.reflections[tKey][domain]===val ? undefined : val;
+      await saveKey('reflections', state.reflections);
+      renderCheckIn(); renderWeekStrip();
+    });
+  });
+}
+
+/* ---------------- Week tab ---------------- */
+function renderDayTabs(){
+  const el = document.getElementById('dayTabs');
+  el.innerHTML = WEEKLY.map((d,i)=>`<div class="day-chip ${i===activeDayIdx?'active':''}" data-i="${i}">${d.name.slice(0,3)}</div>`).join("");
+  el.querySelectorAll('.day-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{ activeDayIdx = parseInt(chip.dataset.i); renderDayTabs(); renderDayTimeline(); });
+  });
+}
+function renderDayTimeline(){
+  const timeline = getDayTimeline(activeDayIdx);
+  const wakeMin = toMin(state.profile.wake);
+  const colorFor = t => ({work:"#26313F", family:"#6B7F5B", chores:"#6B7F5B", faith:"#B98B2A", sleep:"#CFC6AE", free:"#E4DCC7"}[t] || "#E4DCC7");
+  const workout = WEEKLY[activeDayIdx].workout;
+  const el = document.getElementById('dayTimeline');
+  const rows = timeline.map(s=>{
+    const startClock = (wakeMin+s.start)%1440, endClock = (wakeMin+s.end)%1440;
+    let label = s.label, sub = "";
+    if(s.type==='free' && workout.dur>0 && !el.dataset.workoutPlaced){ /* placeholder, handled below */ }
+    return {s, startClock, endClock, label};
+  });
+  // Insert the day's training note into the first free evening block (heuristic: the largest free block after work/family)
+  let biggestFreeIdx = -1, biggestLen = 0;
+  timeline.forEach((s,i)=>{ if(s.type==='free' && (s.end-s.start)>biggestLen){ biggestLen=s.end-s.start; biggestFreeIdx=i; } });
+
+  el.innerHTML = rows.map((r,i)=>{
+    let sub = "";
+    if(r.s.type==='free'){
+      sub = i===biggestFreeIdx && workout.dur>0
+        ? `Free — room for ${workout.label.toLowerCase()} (${workout.detail}) and study/family time`
+        : "Free — study, family, or rest";
+    } else if(r.s.type==='faith'){
+      sub = "Fixed — morning reflection";
+    } else if(r.s.type==='sleep'){
+      sub = "Sleep";
+    }
+    return `<div class="tl-row">
+      <div class="tl-time">${fmt(r.startClock)} – ${fmt(r.endClock)}</div>
+      <div class="tl-bar" style="background:${colorFor(r.s.type)}"></div>
+      <div>
+        <div class="tl-label">${r.label}</div>
+        ${sub ? `<div class="tl-sub">${sub}</div>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------------- Food tab ---------------- */
+function renderFood(){
+  document.getElementById('foodList').innerHTML = FOOD.map(f=>`<div class="food-group"><h3>${f.title}</h3><p>${f.body}</p></div>`).join("");
+}
+
+/* ---------------- Tabs ---------------- */
+function switchTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  ['today','week','food'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab));
+  if(tab==='week'){ renderDayTabs(); renderDayTimeline(); }
+  if(tab==='food'){ renderFood(); }
+}
+
+/* ---------------- Onboarding ---------------- */
+function renderPriorityList(){
+  const el = document.getElementById('ob_priorities');
+  el.innerHTML = obPriorities.map((key,i)=>{
+    const d = DOMAINS[key];
+    return `<div class="priority-row">
+      <span class="plabel"><i class="key-dot" style="background:${d.hex};"></i>${d.label}</span>
+      <span><button class="pbtn" data-i="${i}" data-dir="-1" ${i===0?'disabled':''}>↑</button>
+      <button class="pbtn" data-i="${i}" data-dir="1" ${i===obPriorities.length-1?'disabled':''}>↓</button></span>
+    </div>`;
+  }).join("");
+  el.querySelectorAll('.pbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.dataset.i), j = i+parseInt(btn.dataset.dir);
+      [obPriorities[i], obPriorities[j]] = [obPriorities[j], obPriorities[i]];
+      renderPriorityList();
+    });
+  });
+}
+function renderWeekBlockEditor(){
+  const el = document.getElementById('ob_weekBlocks');
+  el.innerHTML = WEEKLY.map((d,i)=>{
+    const custom = state.weekBlocks[i] || d.blocks.map(b=>({start:b.start,end:b.end}));
+    const rows = d.blocks.map((b,bi)=>`
+      <div class="brow">
+        <span>${b.label}</span>
+        <input type="time" data-day="${i}" data-b="${bi}" data-field="start" value="${custom[bi]?.start||b.start}">
+        <input type="time" data-day="${i}" data-b="${bi}" data-field="end" value="${custom[bi]?.end||b.end}">
+      </div>`).join("");
+    return `<div class="day-edit"><div class="dname">${d.name}</div>${rows || '<div class="brow"><span>No fixed block</span></div>'}</div>`;
+  }).join("");
+}
+function showOnboarding(){
+  document.getElementById('onboarding').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  obPriorities = [...state.profile.priorities];
+  document.getElementById('ob_wake').value = state.profile.wake;
+  document.getElementById('ob_sleep').value = state.profile.sleepHours;
+  document.getElementById('ob_workStart').value = state.profile.workStart;
+  document.getElementById('ob_workEnd').value = state.profile.workEnd;
+  document.getElementById('ob_faith').value = state.profile.faithMinutes;
+  renderPriorityList();
+  renderWeekBlockEditor();
+}
+function showMain(){
+  document.getElementById('onboarding').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  switchTab('today');
+  renderHero(); renderSleepCard(); renderShape(); renderWeekStrip(); renderCheckIn();
+}
+
+/* ---------------- Header ---------------- */
+function renderHeader(){
+  const now = new Date();
+  const h = now.getHours();
+  document.getElementById('greeting').textContent = h<12 ? "Good morning" : h<18 ? "Good afternoon" : "Good evening";
+  document.getElementById('dateLine').textContent = now.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric'});
+}
+
+/* ---------------- Init ---------------- */
+async function init(){
+  state.onboarded = await loadKey('onboarded', false);
+  state.profile = await loadKey('profile', state.profile);
+  state.weekBlocks = await loadKey('weekBlocks', defaultWeekBlocks());
+  state.reflections = await loadKey('reflections', {});
+  state.minimumDays = await loadKey('minimumDays', {});
+
+  renderHeader();
+  setInterval(()=>{ renderHeader(); if(state.onboarded && activeTab==='today') renderHero(); }, 60000);
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click', ()=>switchTab(t.dataset.tab)));
+
+  if(!state.onboarded){ showOnboarding(); } else { showMain(); }
+
+  document.getElementById('ob_save').addEventListener('click', async ()=>{
+    state.profile = {
+      wake: document.getElementById('ob_wake').value || "05:30",
+      sleepHours: parseFloat(document.getElementById('ob_sleep').value) || 7.5,
+      workStart: document.getElementById('ob_workStart').value || "08:30",
+      workEnd: document.getElementById('ob_workEnd').value || "17:00",
+      faithMinutes: parseInt(document.getElementById('ob_faith').value) || 30,
+      priorities: [...obPriorities]
+    };
+    const wb = {};
+    document.querySelectorAll('#ob_weekBlocks input').forEach(inp=>{
+      const day = inp.dataset.day, bi = inp.dataset.b, field = inp.dataset.field;
+      if(!wb[day]) wb[day] = [];
+      if(!wb[day][bi]) wb[day][bi] = {};
+      const fallback = WEEKLY[parseInt(day)].blocks[parseInt(bi)][field];
+      wb[day][bi][field] = inp.value || fallback; // never save a blank/invalid time
+    });
+    state.weekBlocks = wb;
+    state.onboarded = true;
+    await saveKey('profile', state.profile);
+    await saveKey('weekBlocks', state.weekBlocks);
+    await saveKey('onboarded', true);
+    showMain();
+  });
+
+  document.getElementById('editSetup').addEventListener('click', showOnboarding);
+}
+init();
+</script>
+</body>
+</html>
