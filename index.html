@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anchor — a week built around what matters</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#26313F">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Anchor">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -164,6 +170,14 @@
       <div class="hero-actions">
         <button class="btn" id="ob_save">Save</button>
       </div>
+
+      <h2 style="margin:18px 0 4px;font-size:17px;">Backup</h2>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin-top:0;">Your data lives in this browser only. Export it to move to another device or keep a copy.</p>
+      <div class="hero-actions">
+        <button class="btn ghost small" id="exportBtn">Export backup</button>
+        <button class="btn ghost small" id="importTrigger">Import backup</button>
+        <input type="file" id="importInput" accept="application/json" class="hidden">
+      </div>
     </div>
   </section>
 
@@ -271,12 +285,83 @@ const FOOD = [
 ];
 
 /* ---------------- Storage ---------------- */
+// IndexedDB-backed key/value store. More capacity and more robust than
+// localStorage, still zero dependencies, and works offline once the service
+// worker has cached the app shell. Persistence is still per-browser — export/
+// import below is what actually makes the data portable between devices.
+const DB_NAME = 'anchor-db', DB_VERSION = 1, STORE = 'kv';
+let _dbPromise = null;
+function openDB(){
+  if(_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject)=>{
+    if(!('indexedDB' in window)){ reject(new Error('IndexedDB unavailable')); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _dbPromise;
+}
 async function loadKey(key, fallback){
-  try{ const r = await window.storage.get(key); return r ? JSON.parse(r.value) : fallback; }
-  catch(e){ return fallback; }
+  try{
+    const db = await openDB();
+    return await new Promise((resolve)=>{
+      const req = db.transaction(STORE,'readonly').objectStore(STORE).get(key);
+      req.onsuccess = () => resolve(req.result !== undefined ? req.result : fallback);
+      req.onerror = () => resolve(fallback);
+    });
+  }catch(e){ console.error("load failed", e); return fallback; }
 }
 async function saveKey(key, value){
-  try{ await window.storage.set(key, JSON.stringify(value)); } catch(e){ console.error("save failed", e); }
+  try{
+    const db = await openDB();
+    await new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  }catch(e){ console.error("save failed", e); }
+}
+
+/* ---------------- Export / import (portability) ---------------- */
+async function exportData(){
+  const data = {
+    app:'anchor', version:1, exportedAt:new Date().toISOString(),
+    onboarded: state.onboarded, profile: state.profile, weekBlocks: state.weekBlocks,
+    workOverrides: state.workOverrides, reflections: state.reflections, minimumDays: state.minimumDays
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `anchor-backup-${todayKey()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+async function importDataFromFile(file){
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(data.app !== 'anchor') throw new Error('Not an Anchor backup file');
+    state.profile = data.profile || state.profile;
+    state.weekBlocks = data.weekBlocks || state.weekBlocks;
+    state.workOverrides = data.workOverrides || state.workOverrides;
+    state.reflections = data.reflections || state.reflections;
+    state.minimumDays = data.minimumDays || state.minimumDays;
+    state.onboarded = true;
+    await saveKey('profile', state.profile);
+    await saveKey('weekBlocks', state.weekBlocks);
+    await saveKey('workOverrides', state.workOverrides);
+    await saveKey('reflections', state.reflections);
+    await saveKey('minimumDays', state.minimumDays);
+    await saveKey('onboarded', true);
+    showMain();
+    return true;
+  }catch(e){
+    console.error('import failed', e);
+    alert('That file could not be read as an Anchor backup.');
+    return false;
+  }
 }
 
 /* ---------------- State ---------------- */
@@ -284,9 +369,17 @@ let state = {
   onboarded:false,
   profile:{wake:"05:30", sleepHours:7.5, workStart:"08:30", workEnd:"17:00", faithMinutes:30, priorities:["study","family","faith"]},
   weekBlocks:{},     // { "1": [{start,end}], ... } times only, label/type/dur from WEEKLY
+  workOverrides:{},  // { "2": "16:00", ... } per-day "leave by" time, overriding profile.workEnd
   reflections:{},
   minimumDays:{}
 };
+// Per-day "leave by" times. The sample week needs none, so the default is empty;
+// users set an earlier finish for any day in Setup.
+//
+//
+function defaultWorkOverrides(){
+  return {};
+}
 let obPriorities = [];
 let activeTab = 'today';
 let activeDayIdx = new Date().getDay();
@@ -333,7 +426,10 @@ function getDayTimeline(dow){
   // Paint order = priority order: sleep and work are the backdrop; faith and
   // family/chores/fixed blocks are painted last so they always take precedence.
   paint(1440 - Math.round(p.sleepHours*60), 1440, 'sleep', 'Sleep');
-  if(tmpl.work) paint(rel(p.workStart), rel(p.workEnd), 'work', 'Work');
+  if(tmpl.work){
+    const workEnd = (state.workOverrides && state.workOverrides[dow]) || p.workEnd;
+    paint(rel(p.workStart), rel(workEnd), 'work', 'Work');
+  }
   paint(0, p.faithMinutes, 'faith', 'Morning faith & prayer');
   tmpl.blocks.forEach((b,i)=>{
     const times = custom[i] || b;
@@ -614,7 +710,13 @@ function renderWeekBlockEditor(){
         <input type="time" data-day="${i}" data-b="${bi}" data-field="start" value="${custom[bi]?.start||b.start}">
         <input type="time" data-day="${i}" data-b="${bi}" data-field="end" value="${custom[bi]?.end||b.end}">
       </div>`).join("");
-    return `<div class="day-edit"><div class="dname">${d.name}</div>${rows || '<div class="brow"><span>No fixed block</span></div>'}</div>`;
+    const workRow = d.work ? `
+      <div class="brow">
+        <span>Leave work by</span>
+        <input type="time" data-work-day="${i}" value="${state.workOverrides[i] || state.profile.workEnd}">
+        <span style="flex:0;color:var(--ink-soft);font-size:12px;">(normally ${state.profile.workEnd})</span>
+      </div>` : "";
+    return `<div class="day-edit"><div class="dname">${d.name}</div>${rows || '<div class="brow"><span>No fixed block</span></div>'}${workRow}</div>`;
   }).join("");
 }
 function showOnboarding(){
@@ -649,6 +751,7 @@ async function init(){
   state.onboarded = await loadKey('onboarded', false);
   state.profile = await loadKey('profile', state.profile);
   state.weekBlocks = await loadKey('weekBlocks', defaultWeekBlocks());
+  state.workOverrides = await loadKey('workOverrides', defaultWorkOverrides());
   state.reflections = await loadKey('reflections', {});
   state.minimumDays = await loadKey('minimumDays', {});
 
@@ -669,7 +772,7 @@ async function init(){
       priorities: [...obPriorities]
     };
     const wb = {};
-    document.querySelectorAll('#ob_weekBlocks input').forEach(inp=>{
+    document.querySelectorAll('#ob_weekBlocks input[data-day]').forEach(inp=>{
       const day = inp.dataset.day, bi = inp.dataset.b, field = inp.dataset.field;
       if(!wb[day]) wb[day] = [];
       if(!wb[day][bi]) wb[day][bi] = {};
@@ -677,16 +780,36 @@ async function init(){
       wb[day][bi][field] = inp.value || fallback; // never save a blank/invalid time
     });
     state.weekBlocks = wb;
+
+    const wo = {};
+    document.querySelectorAll('#ob_weekBlocks input[data-work-day]').forEach(inp=>{
+      wo[inp.dataset.workDay] = inp.value || state.profile.workEnd;
+    });
+    state.workOverrides = wo;
+
     state.onboarded = true;
     await saveKey('profile', state.profile);
     await saveKey('weekBlocks', state.weekBlocks);
+    await saveKey('workOverrides', state.workOverrides);
     await saveKey('onboarded', true);
     showMain();
   });
 
   document.getElementById('editSetup').addEventListener('click', showOnboarding);
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importTrigger').addEventListener('click', ()=>document.getElementById('importInput').click());
+  document.getElementById('importInput').addEventListener('change', (e)=>{
+    if(e.target.files[0]) importDataFromFile(e.target.files[0]);
+    e.target.value = '';
+  });
 }
 init();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./service-worker.js').catch(e=>console.error('Service worker registration failed', e));
+  });
+}
 </script>
 </body>
 </html>

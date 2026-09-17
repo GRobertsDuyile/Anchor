@@ -14,6 +14,11 @@ python3 -m http.server 8000
 
 No build step, no dependencies, no package manager.
 
+Service workers require `http://` or `https://` — opening `index.html` directly
+as a `file://` URL will run the app fine but skip offline caching and the
+install prompt. Serve it locally (as above) or from any static host (GitHub
+Pages, Netlify, etc.) to test the actual "Add to Home Screen" install.
+
 ## What it does
 
 Onboarding captures wake time, sleep target, work hours and morning faith
@@ -31,28 +36,44 @@ Three tabs run off that profile:
 
 ## Structure
 
-Everything lives in `index.html`. The parts worth knowing:
+- `index.html` — the app itself.
+- `manifest.json` — PWA manifest (name, theme colour, icons) for "Add to Home Screen."
+- `service-worker.js` — cache-first app-shell caching for offline load. Bump `CACHE_NAME` inside it on any deploy that changes `index.html`, the manifest, or the icons.
+- `icon-192.png`, `icon-512.png` — home-screen icons.
+
+Inside `index.html`, the parts worth knowing:
 
 - `WEEKLY` — the seven-day template of fixed blocks and training.
-- `DOMAINS` — suggestion libraries per domain, each with a full and a minimum
-  variant.
-- `getDayTimeline(dow)` — paints a 1440-minute array and collapses it into
-  segments; this is where block overlaps resolve.
-- `generateSuggestions(remaining, minDay, dow)` — fits activities into the time
-  left before the next segment starts.
+- `DOMAINS` — suggestion libraries per domain, each with a full and a minimum variant.
+- `getDayTimeline(dow)` — paints a 1440-minute array and collapses it into segments; this is where block overlaps resolve, including the per-day work-end override below.
+- `generateSuggestions(remaining, minDay, dow)` — fits activities into the time left before the next segment starts.
 
-## Known issue: persistence
+## Persistence
 
-Saving runs through `window.storage`, which exists in the Claude artifact preview
-and nowhere else. Opened as a plain file or served from static hosting, every
-call to `loadKey` and `saveKey` fails. Both are wrapped in `try`/`catch`, so the
-failure is silent: onboarding appears to save, reflections appear to record, and
-nothing survives a reload.
+Saving runs through IndexedDB (`loadKey`/`saveKey`, store `anchor-db`), wrapped
+in `try`/`catch` so a storage-disabled context degrades to in-memory-only
+rather than throwing. This works standalone, served from static hosting, or
+installed on a phone as a PWA.
 
-This is a decision rather than a patch, and it has not been made yet. Either
-swap in a runtime state capability, or use guarded `localStorage` and accept
-that data stays on one device. Do not deploy the file as it stands.
+It does not sync across devices — that's what **Export/Import** (in Setup) is
+for: export writes a single JSON file with everything (profile, weekly blocks,
+work overrides, reflections, minimum-day flags); import reads one back in.
+That file is the actual portable copy of your data — back it up, move it to
+another device, or keep it before clearing browser storage. If real
+cross-device sync is ever needed, a small backend is the next step; it isn't
+required for single-device personal use.
+
+## Per-day work end
+
+Each weekday has a **"Leave work by"** time in Setup, so a fixed block late in the
+afternoon can shorten the work segment on that day only. `getDayTimeline` uses
+this per-day value instead of a flat end time, so the Today and Week views show
+accurate "at work until" times.
 
 ## Status
 
-Paused mid-build. See the persistence issue above before adding features.
+Persistence, offline install, and the per-day work end are resolved.
+Next candidates: a lunch-hour or mid-day study gap for the researcher role
+(currently there's no attempt to model gaps between meetings within the work
+block), and letting weekend chores have an editable start time instead of the
+current 09:00 guess.
