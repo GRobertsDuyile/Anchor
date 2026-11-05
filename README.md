@@ -1,8 +1,26 @@
 # Anchor
 
-A single-file personal day-planning webapp. The day is modelled relative to wake
-time rather than the clock, so every suggestion is sized to the gap that is
-actually left in front of you.
+Anchor is a day planner that works from your wake time rather than the clock. It knows what is fixed in your week, so at any moment it can suggest what fits in the time actually left before your next commitment.
+
+## Who it is for
+
+Anchor is for people whose days are shaped by commitments they cannot move, such as school runs, shifts, classes or training, and who want help using the gaps between them. It suits anyone who has found that a to-do list ignores how much time is really left.
+
+## What it does
+
+Setup asks for your wake time, sleep target, working hours, time each morning for faith and prayer, the order of your priorities, and the fixed blocks in your week. Anchor ships with a sample week so you can see it working straight away; change any of it in Setup.
+
+**Today** names the segment you are in and suggests what fits the time remaining, drawn from your priorities in order. You can ask for a different mix, or switch to a minimum day when you have less to give. Below sit a bedtime card, a bar showing the shape of the day, a seven-day reflection strip and an evening check-in.
+
+**Week** shows each day as a timeline.
+
+**Food** is a short reference list. It will become a notes tab you write yourself (see the roadmap).
+
+## Your data stays on your device
+
+There is no server, no account and no analytics. Everything you enter is stored in your browser using IndexedDB. **Export backup** in Setup saves it all to one JSON file, and **Import backup** reads it back on the same or another device.
+
+One exception for now: the page loads its two fonts from Google Fonts. Serving them from this repository instead is the first item on the roadmap.
 
 ## Running it
 
@@ -12,68 +30,30 @@ Open `index.html` in a browser, or serve the folder:
 python3 -m http.server 8000
 ```
 
-No build step, no dependencies, no package manager.
+Then open http://localhost:8000. There is no build step and nothing to install. Opening the file directly works, but the browser then skips offline caching and the install prompt, so serve it, locally or from a static host such as GitHub Pages, to test installing it as an app.
 
-Service workers require `http://` or `https://` — opening `index.html` directly
-as a `file://` URL will run the app fine but skip offline caching and the
-install prompt. Serve it locally (as above) or from any static host (GitHub
-Pages, Netlify, etc.) to test the actual "Add to Home Screen" install.
+## Built with
 
-## What it does
-
-Onboarding captures wake time, sleep target, work hours and morning faith
-minutes, together with a priority order across study, family and faith and a set
-of editable fixed weekly blocks.
-
-Three tabs run off that profile:
-
-- **Today** — a hero card naming the current segment and suggesting what fits
-  the remaining time, with a reshuffle control and a minimum-day toggle; plus a
-  bedtime card, a day-shape bar, a seven-day reflection strip and a four-domain
-  check-in.
-- **Week** — the per-day timeline, with fixed blocks editable per day.
-- **Food** — a static reference list.
+Plain HTML, CSS and JavaScript, with no framework and no dependencies. A service worker caches the app for offline use, and a web app manifest makes it installable on a phone.
 
 ## Structure
 
-- `index.html` — the app itself.
-- `manifest.json` — PWA manifest (name, theme colour, icons) for "Add to Home Screen."
-- `service-worker.js` — cache-first app-shell caching for offline load. Bump `CACHE_NAME` inside it on any deploy that changes `index.html`, the manifest, or the icons.
-- `icon-192.png`, `icon-512.png` — home-screen icons.
+- `index.html`: the app.
+- `manifest.json`: name, theme colour and icons for installing.
+- `service-worker.js`: offline caching. Bump `CACHE_NAME` on any deploy that changes the cached files.
+- `icon-192.png`, `icon-512.png`: home-screen icons.
 
-Inside `index.html`, the parts worth knowing:
+Inside `index.html`:
 
-- `WEEKLY` — the seven-day template of fixed blocks and training.
-- `DOMAINS` — suggestion libraries per domain, each with a full and a minimum variant.
-- `getDayTimeline(dow)` — paints a 1440-minute array and collapses it into segments; this is where block overlaps resolve, including the per-day work-end override below.
-- `generateSuggestions(remaining, minDay, dow)` — fits activities into the time left before the next segment starts.
+- `WEEKLY`: the sample week of fixed blocks and training.
+- `DOMAINS`: suggestions for each priority, each with a full and a minimum version.
+- `getDayTimeline(dow)`: lays the day out minute by minute, resolves overlaps between work and fixed blocks, including each day's "Leave work by" time, and returns the day as segments.
+- `generateSuggestions(remaining, minDay, dow)`: fits suggestions into the minutes left before the next segment.
 
-## Persistence
+## Roadmap
 
-Saving runs through IndexedDB (`loadKey`/`saveKey`, store `anchor-db`), wrapped
-in `try`/`catch` so a storage-disabled context degrades to in-memory-only
-rather than throwing. This works standalone, served from static hosting, or
-installed on a phone as a PWA.
+See [ROADMAP.md](ROADMAP.md).
 
-It does not sync across devices — that's what **Export/Import** (in Setup) is
-for: export writes a single JSON file with everything (profile, weekly blocks,
-work overrides, reflections, minimum-day flags); import reads one back in.
-That file is the actual portable copy of your data — back it up, move it to
-another device, or keep it before clearing browser storage. If real
-cross-device sync is ever needed, a small backend is the next step; it isn't
-required for single-device personal use.
+## Licence
 
-## Per-day work end
-
-Each weekday has a **"Leave work by"** time in Setup, so a fixed block late in the
-afternoon can shorten the work segment on that day only. `getDayTimeline` uses
-this per-day value instead of a flat end time, so the Today and Week views show
-accurate "at work until" times.
-
-## Status
-
-Persistence, offline install, and the per-day work end are resolved.
-Next candidates: a lunch-hour or mid-day study gap for the researcher role
-(currently there's no attempt to model gaps between meetings within the work
-block), and letting weekend chores have an editable start time instead of the
-current 09:00 guess.
+[MIT](LICENSE)
